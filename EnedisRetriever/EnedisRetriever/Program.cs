@@ -1,5 +1,6 @@
 using EnedisRetriever.Configuration;
 using EnedisRetriever.ConsoApi;
+using EnedisRetriever.Services;
 using Microsoft.Extensions.Options;
 
 namespace EnedisRetriever
@@ -13,7 +14,8 @@ namespace EnedisRetriever
             var builder = WebApplication.CreateBuilder(args);
 
             builder.Services.AddControllers();
-
+            builder.Services.AddScoped<ConsumptionService>();
+            builder.Services.AddScoped<ConsumptionAggregationService>();
             builder.Services
                 .Configure<ConsoApiOptions>(options =>
                 {
