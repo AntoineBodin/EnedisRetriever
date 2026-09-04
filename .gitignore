@@ -12,7 +12,7 @@ obj/
 *.userosscache
 *.sln.docstates
 
-# Rider / JetBrains
+# JetBrains Rider
 .idea/
 *.sln.iml
 
@@ -41,18 +41,11 @@ node_modules/
 dist/
 .vite/
 
-# npm logs
+# npm / yarn / pnpm logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
-
-# =========================
-# OS
-# =========================
-
-.DS_Store
-Thumbs.db
 
 # =========================
 # IDE
@@ -65,7 +58,14 @@ Thumbs.db
 !.vscode/launch.json
 
 # =========================
-# Local / generated files
+# OS
+# =========================
+
+.DS_Store
+Thumbs.db
+
+# =========================
+# Logs / coverage
 # =========================
 
 *.log
