@@ -1,6 +1,9 @@
 using EnedisRetriever.Configuration;
 using EnedisRetriever.ConsoApi;
+using EnedisRetriever.Domain;
+using EnedisRetriever.Persistence;
 using EnedisRetriever.Services;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
 namespace EnedisRetriever
@@ -52,6 +55,11 @@ namespace EnedisRetriever
 
                 client.BaseAddress = new Uri(options.BaseUrl);
             });
+
+            builder.Services.AddDbContext<AppDbContext>(options =>
+                options.UseNpgsql(
+                    builder.Configuration.GetConnectionString("DefaultConnection")));
+            builder.Services.AddScoped<ConsumptionRepository>();
 
             var app = builder.Build();
 

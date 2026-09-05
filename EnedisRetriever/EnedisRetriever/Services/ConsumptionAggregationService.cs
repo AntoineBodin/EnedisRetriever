@@ -27,10 +27,10 @@ public class ConsumptionAggregationService
     }
 
     private static DateTime GetPeriodStart(
-        Domain.ConsumptionPoint point,
+        ConsumptionPoint point,
         ConsumptionGranularity granularity)
     {
-        var intervalStart = point.Date - point.IntervalDuration;
+        var intervalStart = point.Timestamp - point.IntervalDuration;
 
         return granularity switch
         {

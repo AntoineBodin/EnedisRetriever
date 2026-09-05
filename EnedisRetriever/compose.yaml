@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: enedis-retriever-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: enedis_retriever
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - enedis-retriever-postgres-data:/var/lib/postgresql/data
+
+volumes:
+  enedis-retriever-postgres-data:

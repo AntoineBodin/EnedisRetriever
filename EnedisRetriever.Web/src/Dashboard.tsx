@@ -275,10 +275,15 @@ function Dashboard() {
       }
     }
 
-    loadConsumption();
+    // StrictMode immediately cleans up its first development-only effect pass.
+    // Deferring the request lets that cleanup cancel the pass before fetch starts.
+    const loadTimeout = window.setTimeout(loadConsumption, 0);
 
     // cancels a stale in-flight request (e.g. React StrictMode's double-invoke in dev, or fast filter changes)
-    return () => controller.abort();
+    return () => {
+      window.clearTimeout(loadTimeout);
+      controller.abort();
+    };
   }, [
     startDate,
     apiEndDate
