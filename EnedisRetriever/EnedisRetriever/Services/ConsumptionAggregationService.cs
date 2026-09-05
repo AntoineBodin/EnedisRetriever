@@ -5,7 +5,7 @@ namespace EnedisRetriever.Services;
 public class ConsumptionAggregationService
 {
     public List<ConsumptionPeriod> Aggregate(
-        IEnumerable<ConsumptionPoint> points,
+        IEnumerable<Domain.ConsumptionPoint> points,
         ConsumptionGranularity granularity)
     {
         return points
@@ -27,7 +27,7 @@ public class ConsumptionAggregationService
     }
 
     private static DateTime GetPeriodStart(
-        ConsumptionPoint point,
+        Domain.ConsumptionPoint point,
         ConsumptionGranularity granularity)
     {
         var intervalStart = point.Date - point.IntervalDuration;

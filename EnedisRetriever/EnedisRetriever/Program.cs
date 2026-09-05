@@ -34,7 +34,16 @@ namespace EnedisRetriever
                         ?? throw new InvalidOperationException(
                             "CONSO_API_PRM is not configured.");
                 });
-
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("Frontend", policy =>
+                {
+                    policy
+                        .WithOrigins("http://localhost:5173")
+                        .AllowAnyHeader()
+                        .AllowAnyMethod();
+                });
+            });
             builder.Services.AddHttpClient<ConsoApiClient>((serviceProvider, client) =>
             {
                 var options = serviceProvider
@@ -46,7 +55,9 @@ namespace EnedisRetriever
 
             var app = builder.Build();
 
-            app.UseHttpsRedirection();
+            //app.UseHttpsRedirection();
+
+            app.UseCors("Frontend");
 
             app.MapControllers();
 

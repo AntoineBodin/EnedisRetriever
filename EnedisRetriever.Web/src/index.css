@@ -1,0 +1,103 @@
+:root {
+  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
+
+  --color-bg: #f4f5f7;
+  --color-surface: #ffffff;
+  --color-surface-subtle: #eef0f4;
+  --color-border: #e2e4e9;
+  --color-text: #333844;
+  --color-text-muted: #6b7280;
+  --color-heading: #111827;
+  --color-accent: #2563eb;
+  --color-accent-contrast: #ffffff;
+  --color-accent-soft: rgba(37, 99, 235, 0.14);
+  --color-danger-bg: #fde8e8;
+  --color-danger-text: #b91c1c;
+  --color-input-bg: #ffffff;
+  --color-input-border: #d1d5db;
+  --color-input-text: #111827;
+
+  --color-peak: #f97316;
+  --color-off-peak: #10b981;
+  --color-subscription: #8b5cf6;
+
+  --shadow-sm:
+    rgba(15, 23, 42, 0.06) 0 1px 2px, rgba(15, 23, 42, 0.08) 0 1px 3px;
+  --shadow-md:
+    rgba(15, 23, 42, 0.06) 0 4px 6px, rgba(15, 23, 42, 0.08) 0 10px 15px;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --transition: 0.2s ease;
+
+  color-scheme: light;
+  font: 16px/145% var(--sans);
+  color: var(--color-text);
+  background: var(--color-bg);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+[data-theme='dark'] {
+  color-scheme: dark;
+
+  --color-bg: #0f1115;
+  --color-surface: #1a1d24;
+  --color-surface-subtle: #20242c;
+  --color-border: #2c313c;
+  --color-text: #d1d5db;
+  --color-text-muted: #9ca3af;
+  --color-heading: #f3f4f6;
+  --color-accent: #60a5fa;
+  --color-accent-contrast: #0b1220;
+  --color-accent-soft: rgba(96, 165, 250, 0.18);
+  --color-danger-bg: rgba(248, 113, 113, 0.14);
+  --color-danger-text: #fca5a5;
+  --color-input-bg: #12141a;
+  --color-input-border: #333844;
+  --color-input-text: #f3f4f6;
+
+  --color-peak: #fb923c;
+  --color-off-peak: #34d399;
+  --color-subscription: #a78bfa;
+
+  --shadow-sm: rgba(0, 0, 0, 0.4) 0 1px 3px;
+  --shadow-md: rgba(0, 0, 0, 0.45) 0 10px 15px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  transition: background var(--transition), color var(--transition);
+}
+
+#root {
+  min-height: 100svh;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--sans);
+  font-weight: 600;
+  color: var(--color-heading);
+}
+
+button {
+  font-family: inherit;
+}
+
