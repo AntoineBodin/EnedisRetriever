@@ -26,6 +26,9 @@ export async function getConsumptionAggregate(
     { signal }
   );
 
+  console.log(`Fetching consumption data with params: ${searchParams}`);
+  console.log(`API URL: ${API_BASE_URL}/api/consumption?${searchParams}`);
+
   if (!response.ok) {
     throw new Error(
       `Failed to fetch consumption data: ${response.status}`
