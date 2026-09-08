@@ -50,7 +50,7 @@ function isOffPeak(
   point: ConsumptionPoint,
   ranges: TimeRange[]
 ): boolean {
-  const startTime = new Date(point.start).toLocaleTimeString(
+  const startTime = new Date(point.timestamp).toLocaleTimeString(
     'fr-FR',
     {
       hour: '2-digit',
@@ -103,7 +103,7 @@ export function calculateEnergyPoints(
       isOffPeak(point, contract.offPeakRanges);
 
     return {
-      start: point.start,
+      start: point.timestamp,
       peakKwh: isPointOffPeak ? 0 : point.energyKwh,
       offPeakKwh: isPointOffPeak ? point.energyKwh : 0
     };
@@ -131,7 +131,7 @@ export function calculateCostPoints(
     const cost = point.energyKwh * getEnergyRate(point, contract);
 
     return {
-      start: point.start,
+      start: point.timestamp,
       peakCost: isPointOffPeak ? 0 : cost,
       offPeakCost: isPointOffPeak ? cost : 0,
       subscriptionCost: subscriptionCostPerPoint

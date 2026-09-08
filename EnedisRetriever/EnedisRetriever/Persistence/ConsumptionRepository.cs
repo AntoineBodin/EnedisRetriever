@@ -3,14 +3,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace EnedisRetriever.Persistence;
 
-public class ConsumptionRepository
+public class ConsumptionRepository(AppDbContext dbContext)
 {
-    private readonly AppDbContext _dbContext;
-
-    public ConsumptionRepository(AppDbContext dbContext)
-    {
-        _dbContext = dbContext;
-    }
+    private readonly AppDbContext _dbContext = dbContext;
 
     public async Task<List<ConsumptionPoint>> GetAsync(
         DateTime start,

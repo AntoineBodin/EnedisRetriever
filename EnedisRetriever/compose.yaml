@@ -7,10 +7,21 @@ services:
       POSTGRES_DB: enedis_retriever
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-    ports:
-      - "5433:5432"
     volumes:
       - enedis-retriever-postgres-data:/var/lib/postgresql/data
+
+  enedis-retriever:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: enedis-retriever
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5100:8080"
+    env_file:
+      - .env.docker.production
+    depends_on:
+      - postgres
 
 volumes:
   enedis-retriever-postgres-data:

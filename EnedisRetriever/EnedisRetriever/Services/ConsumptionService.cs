@@ -6,24 +6,17 @@ using System.Globalization;
 
 namespace EnedisRetriever.Services;
 
-public class ConsumptionService
+public class ConsumptionService(
+    ConsoApiClient consoApiClient,
+    ConsumptionRepository consumptionRepository,
+    ILogger<ConsumptionService> logger)
 {
     private const int MaxLoadCurveDays = 7;
     private const int IntervalMinutes = 30;
 
-    private readonly ConsoApiClient _consoApiClient;
-    private readonly ConsumptionRepository _consumptionRepository;
-    private readonly ILogger<ConsumptionService> _logger;
-
-    public ConsumptionService(
-        ConsoApiClient consoApiClient,
-        ConsumptionRepository consumptionRepository,
-        ILogger<ConsumptionService> logger)
-    {
-        _consoApiClient = consoApiClient;
-        _consumptionRepository = consumptionRepository;
-        _logger = logger;
-    }
+    private readonly ConsoApiClient _consoApiClient = consoApiClient;
+    private readonly ConsumptionRepository _consumptionRepository = consumptionRepository;
+    private readonly ILogger<ConsumptionService> _logger = logger;
 
     public async Task<List<ConsumptionPoint>> GetConsumptionAsync(
         DateOnly start,
@@ -96,25 +89,6 @@ public class ConsumptionService
             end);
 
         return finalPoints;
-    }
-
-    public async Task<ConsumptionSummary> GetConsumptionSummaryAsync(
-        DateOnly start,
-        DateOnly end,
-        CancellationToken cancellationToken = default)
-    {
-        var points = await GetConsumptionAsync(
-            start,
-            end,
-            cancellationToken);
-
-        return new ConsumptionSummary
-        {
-            Start = start,
-            End = end,
-            TotalKwh = points.Sum(point => point.EnergyKwh),
-            Points = points
-        };
     }
 
     private async Task<List<IntervalReading>> GetLoadCurveReadingsAsync(
@@ -226,7 +200,7 @@ public class ConsumptionService
     }
 
     private static List<ApiDateRange> GroupApiDaysIntoRanges(
-        IReadOnlyCollection<DateOnly> apiDays)
+        List<DateOnly> apiDays)
     {
         if (apiDays.Count == 0)
         {

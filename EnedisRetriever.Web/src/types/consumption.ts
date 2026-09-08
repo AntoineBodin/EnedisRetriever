@@ -1,6 +1,8 @@
 export type ConsumptionPoint = {
-  start: string;
-  end: string;
+  id: number;
+  timestamp: string;
+  powerWatts: number;
+  intervalDuration: string;
   energyKwh: number;
 };
 

@@ -19,11 +19,10 @@ export async function getConsumptionAggregate(
   const searchParams = new URLSearchParams({
     start: params.start,
     end: params.end,
-    granularity: params.granularity
   });
 
   const response = await fetch(
-    `${API_BASE_URL}/api/consumption/aggregate?${searchParams}`,
+    `${API_BASE_URL}/api/consumption?${searchParams}`,
     { signal }
   );
 

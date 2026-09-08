@@ -52,15 +52,16 @@ function formatDate(date: Date): string {
 }
 
 function getDefaultStartDate(): string {
-  const date = new Date();
-  date.setDate(date.getDate() - 30);
-
-  return formatDate(date);
+  return getLatestAvailableDate();
 }
 
 function getDefaultEndDate(): string {
-  // Today's data is never complete yet, so the latest selectable day is yesterday.
+  return getLatestAvailableDate();
+}
+
+function getLatestAvailableDate(): string {
   const date = new Date();
+  // Today's data is never complete yet, so the latest available period is yesterday.
   date.setDate(date.getDate() - 1);
 
   return formatDate(date);
@@ -135,6 +136,14 @@ function formatTooltipLabel(
   })}`;
 }
 
+function formatPercentage(value: number, total: number): string {
+  if (total === 0) {
+    return '0.0%';
+  }
+
+  return `${((value / total) * 100).toFixed(1)}%`;
+}
+
 type Theme = 'light' | 'dark';
 
 function getInitialTheme(): Theme {
@@ -195,15 +204,19 @@ function Dashboard() {
 
   const maxDate = getDefaultEndDate();
 
-  // The UI uses an inclusive end date.
-  // The API uses an exclusive end date.
+  const [loadedDateRange, setLoadedDateRange] = useState(() => ({
+    start: getDefaultStartDate(),
+    end: getDefaultEndDate()
+  }));
+
+  // The UI uses an inclusive end date; the API uses an exclusive end date.
   const apiEndDate = useMemo(
-    () => getApiEndDate(endDate),
-    [endDate]
+    () => getApiEndDate(loadedDateRange.end),
+    [loadedDateRange.end]
   );
 
   const [granularity, setGranularity] =
-    useState<ConsumptionGranularity>('Day');
+    useState<ConsumptionGranularity>('Hour');
 
   const [consumption, setConsumption] =
     useState<ConsumptionAggregate>([]);
@@ -240,6 +253,18 @@ function Dashboard() {
   const [error, setError] =
     useState<string | null>(null);
 
+  function handleLoadConsumption() {
+    if (startDate > endDate) {
+      setError('The start date must be before the end date.');
+      return;
+    }
+
+    setLoadedDateRange({
+      start: startDate,
+      end: endDate
+    });
+  }
+
   useEffect(() => {
     const controller = new AbortController();
 
@@ -252,7 +277,7 @@ function Dashboard() {
         // any other granularity is aggregated client-side from these points
         const data = await getConsumptionAggregate(
           {
-            start: startDate,
+            start: loadedDateRange.start,
             end: apiEndDate,
             granularity: 'HalfHour'
           },
@@ -285,7 +310,7 @@ function Dashboard() {
       controller.abort();
     };
   }, [
-    startDate,
+    loadedDateRange,
     apiEndDate
   ]);
 
@@ -481,6 +506,17 @@ function Dashboard() {
             </option>
           </select>
         </div>
+
+        <div className="dashboard-filter-action">
+          <button
+            type="button"
+            className="load-consumption-button"
+            onClick={handleLoadConsumption}
+            disabled={loading}
+          >
+            Load data
+          </button>
+        </div>
       </section>
 
       {loading && (
@@ -532,6 +568,12 @@ function Dashboard() {
                 <p>
                   {consumptionCost.peakKwh.toFixed(2)} kWh
                 </p>
+                <span className="summary-card-percentage summary-card-peak">
+                  {formatPercentage(
+                    consumptionCost.peakKwh,
+                    consumptionCost.totalKwh
+                  )}
+                </span>
               </div>
 
               <div className="summary-card">
@@ -539,6 +581,12 @@ function Dashboard() {
                 <p>
                   {consumptionCost.offPeakKwh.toFixed(2)} kWh
                 </p>
+                <span className="summary-card-percentage summary-card-off-peak">
+                  {formatPercentage(
+                    consumptionCost.offPeakKwh,
+                    consumptionCost.totalKwh
+                  )}
+                </span>
               </div>
 
               <div className="summary-card">
@@ -686,18 +734,64 @@ function Dashboard() {
                     labelStyle={{
                       color: 'var(--color-heading)'
                     }}
-                    labelFormatter={(_, payload) =>
-                      formatTooltipLabel(
-                        (payload?.[0]?.payload as ChartRow | undefined)
-                          ?.start ?? '',
-                        granularity
-                      )
-                    }
-                    formatter={(value, name) =>
-                      chartView === 'energy'
-                        ? [`${Number(value).toFixed(3)} kWh`, name]
-                        : [`${Number(value).toFixed(2)} €`, name]
-                    }
+                    content={({ active, payload }) => {
+                      if (!active || !payload?.length) {
+                        return null;
+                      }
+
+                      const point = payload[0].payload as ChartRow;
+                      const peakValue = chartView === 'energy'
+                        ? point.peakKwh ?? 0
+                        : point.peakCost ?? 0;
+                      const offPeakValue = chartView === 'energy'
+                        ? point.offPeakKwh ?? 0
+                        : point.offPeakCost ?? 0;
+                      const subscriptionValue =
+                        chartView === 'cost' && includeSubscription
+                          ? point.subscriptionCost ?? 0
+                          : 0;
+                      const total =
+                        peakValue + offPeakValue + subscriptionValue;
+                      const unit = chartView === 'energy' ? 'kWh' : '€';
+                      const showEnergyPercentages =
+                        chartView === 'energy' &&
+                        granularity !== 'HalfHour' &&
+                        granularity !== 'Hour';
+                      const formatValue = (value: number) =>
+                        `${value.toFixed(chartView === 'energy' ? 3 : 2)} ${unit}`;
+
+                      return (
+                        <div className="chart-tooltip">
+                          <p className="chart-tooltip-date">
+                            {formatTooltipLabel(point.start, granularity)}
+                          </p>
+                          <p className="chart-tooltip-peak">
+                            HP: {formatValue(peakValue)}
+                            {showEnergyPercentages && (
+                              <span>
+                                ({formatPercentage(peakValue, total)})
+                              </span>
+                            )}
+                          </p>
+                          <p className="chart-tooltip-off-peak">
+                            HC: {formatValue(offPeakValue)}
+                            {showEnergyPercentages && (
+                              <span>
+                                ({formatPercentage(offPeakValue, total)})
+                              </span>
+                            )}
+                          </p>
+                          {chartView === 'cost' && includeSubscription && (
+                            <p className="chart-tooltip-subscription">
+                              Abonnement: {formatValue(subscriptionValue)}
+                            </p>
+                          )}
+                          <p className="chart-tooltip-total">
+                            Total: {formatValue(total)}
+                          </p>
+                        </div>
+                      );
+                    }}
                   />
 
                   {(chartView === 'cost' ||

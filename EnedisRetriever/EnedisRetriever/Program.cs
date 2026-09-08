@@ -18,7 +18,7 @@ namespace EnedisRetriever
 
             builder.Services.AddControllers();
             builder.Services.AddScoped<ConsumptionService>();
-            builder.Services.AddScoped<ConsumptionAggregationService>();
+
             builder.Services
                 .Configure<ConsoApiOptions>(options =>
                 {
@@ -37,6 +37,12 @@ namespace EnedisRetriever
                         ?? throw new InvalidOperationException(
                             "CONSO_API_PRM is not configured.");
                 });
+
+            var connectionString =
+                Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
+                ?? throw new InvalidOperationException(
+                    "ConnectionStrings__DefaultConnection is not configured.");
+
             builder.Services.AddCors(options =>
             {
                 options.AddPolicy("Frontend", policy =>
@@ -57,8 +63,8 @@ namespace EnedisRetriever
             });
 
             builder.Services.AddDbContext<AppDbContext>(options =>
-                options.UseNpgsql(
-                    builder.Configuration.GetConnectionString("DefaultConnection")));
+                options.UseNpgsql(connectionString));
+
             builder.Services.AddScoped<ConsumptionRepository>();
 
             var app = builder.Build();

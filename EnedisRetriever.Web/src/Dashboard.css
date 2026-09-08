@@ -64,6 +64,29 @@
   gap: 6px;
 }
 
+.dashboard-filter-action {
+  display: flex;
+  align-items: end;
+}
+
+.load-consumption-button {
+  width: 100%;
+  min-height: 38px;
+  padding: 9px 14px;
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-sm);
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.load-consumption-button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
 .dashboard-field label {
   font-size: 13px;
   font-weight: 600;
@@ -122,6 +145,21 @@
   font-size: 26px;
   font-weight: 700;
   color: var(--color-heading);
+}
+
+.summary-card-percentage {
+  display: block;
+  margin-top: 4px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.summary-card-peak {
+  color: var(--color-peak);
+}
+
+.summary-card-off-peak {
+  color: var(--color-off-peak);
 }
 
 .dashboard-chart {
@@ -194,6 +232,83 @@
   height: 16px;
   accent-color: var(--color-accent);
   cursor: pointer;
+}
+
+.chart-tooltip {
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-sm);
+}
+
+.chart-tooltip p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.chart-tooltip-peak,
+.chart-tooltip-off-peak,
+.chart-tooltip-subscription {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+
+.chart-tooltip-peak::before,
+.chart-tooltip-off-peak::before,
+.chart-tooltip-subscription::before {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  content: '';
+}
+
+.chart-tooltip-peak {
+  color: var(--color-peak);
+}
+
+.chart-tooltip-peak::before {
+  background: var(--color-peak);
+}
+
+.chart-tooltip-off-peak {
+  color: var(--color-off-peak);
+}
+
+.chart-tooltip-off-peak::before {
+  background: var(--color-off-peak);
+}
+
+.chart-tooltip-subscription {
+  color: var(--color-subscription);
+}
+
+.chart-tooltip-subscription::before {
+  background: var(--color-subscription);
+}
+
+.chart-tooltip-peak span,
+.chart-tooltip-off-peak span {
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.chart-tooltip-date {
+  margin-bottom: 4px !important;
+  color: var(--color-heading);
+  font-weight: 700;
+}
+
+.chart-tooltip-total {
+  margin-top: 4px !important;
+  padding-top: 4px;
+  border-top: 1px solid var(--color-border);
+  color: var(--color-heading);
+  font-weight: 700;
 }
 
 .dashboard-state {
