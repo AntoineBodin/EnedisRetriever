@@ -22,12 +22,9 @@ export async function getConsumptionAggregate(
   });
 
   const response = await fetch(
-    `${API_BASE_URL}/api/consumption?${searchParams}`,
+    `${API_BASE_URL}/consumption?${searchParams}`,
     { signal }
   );
-
-  console.log(`Fetching consumption data with params: ${searchParams}`);
-  console.log(`API URL: ${API_BASE_URL}/api/consumption?${searchParams}`);
 
   if (!response.ok) {
     throw new Error(
