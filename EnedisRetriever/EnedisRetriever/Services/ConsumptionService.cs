@@ -1,8 +1,6 @@
 ﻿using EnedisRetriever.ConsoApi;
-using EnedisRetriever.ConsoApi.Models;
 using EnedisRetriever.Domain;
 using EnedisRetriever.Persistence;
-using System.Globalization;
 
 namespace EnedisRetriever.Services;
 
@@ -57,12 +55,10 @@ public class ConsumptionService(
                 range.Start,
                 range.End);
 
-            var readings = await GetLoadCurveReadingsAsync(
+            var points = await GetLoadCurvePointsAsync(
                 range.Start,
                 range.End,
                 cancellationToken);
-
-            var points = ConvertReadings(readings);
 
             _logger.LogInformation(
                 "ConsoAPI: received {Count} points",
@@ -91,12 +87,12 @@ public class ConsumptionService(
         return finalPoints;
     }
 
-    private async Task<List<IntervalReading>> GetLoadCurveReadingsAsync(
+    private async Task<List<ConsumptionPoint>> GetLoadCurvePointsAsync(
         DateOnly start,
         DateOnly end,
         CancellationToken cancellationToken)
     {
-        var readings = new List<IntervalReading>();
+        var points = new List<ConsumptionPoint>();
         var currentStart = start;
 
         while (currentStart < end)
@@ -118,41 +114,31 @@ public class ConsumptionService(
                 currentEnd,
                 cancellationToken);
 
-            readings.AddRange(loadCurve.IntervalReading);
+            var result = LoadCurveMapper.ToConsumptionPoints(loadCurve);
+
+            if (result.SkippedPoints > 0)
+            {
+                _logger.LogWarning(
+                    "ConsoAPI: {Count} point(s) without a valid value skipped for {Start} -> {End}",
+                    result.SkippedPoints,
+                    currentStart,
+                    currentEnd);
+            }
+
+            if (result.Points.Count == 0)
+            {
+                _logger.LogWarning(
+                    "ConsoAPI: no consumption (CONS / PA / W) point found for {Start} -> {End}",
+                    currentStart,
+                    currentEnd);
+            }
+
+            points.AddRange(result.Points);
 
             currentStart = currentEnd;
         }
 
-        return readings;
-    }
-
-    private static List<ConsumptionPoint> ConvertReadings(
-        IEnumerable<IntervalReading> readings)
-    {
-        return readings
-            .Select(reading =>
-            {
-                var powerWatts = decimal.Parse(
-                    reading.Value,
-                    CultureInfo.InvariantCulture);
-
-                var intervalDuration = IntervalDurationParser.Parse(
-                    reading.IntervalLength);
-
-                var energyKwh =
-                    powerWatts *
-                    (decimal)intervalDuration.TotalHours /
-                    1000m;
-
-                return new ConsumptionPoint
-                {
-                    Timestamp = reading.Date,
-                    PowerWatts = powerWatts,
-                    IntervalDuration = intervalDuration,
-                    EnergyKwh = energyKwh
-                };
-            })
-            .ToList();
+        return points;
     }
 
     private static List<DateOnly> FindMissingApiDays(

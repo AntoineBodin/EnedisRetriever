@@ -8,6 +8,12 @@ namespace EnedisRetriever.ConsoApi;
 
 public class ConsoApiClient
 {
+    // consoAPI data type for the consumption load curve
+    // (Enedis "Mesure synchrone V2"; replaces "consumption_load_curve").
+    private const string LoadCurveType = "courbe_de_charge_consommation";
+
+    private static readonly JsonSerializerOptions JsonOptions = CreateJsonOptions();
+
     private readonly HttpClient _httpClient;
     private readonly ConsoApiOptions _options;
 
@@ -25,10 +31,10 @@ public class ConsoApiClient
         CancellationToken cancellationToken = default)
     {
         var url =
-            $"consumption_load_curve" +
-            $"?prm={Uri.EscapeDataString(_options.Prm)}" +
-            $"&start={start:yyyy-MM-dd}" +
-            $"&end={end:yyyy-MM-dd}";
+            $"{LoadCurveType}" +
+            $"?pointId={Uri.EscapeDataString(_options.Prm)}" +
+            $"&dateDebut={start:yyyy-MM-dd}" +
+            $"&dateFin={end:yyyy-MM-dd}";
 
         using var request = new HttpRequestMessage(
             HttpMethod.Get,
@@ -37,29 +43,37 @@ public class ConsoApiClient
         request.Headers.Authorization =
             new AuthenticationHeaderValue("Bearer", _options.Token);
 
+        request.Headers.Accept.Add(
+            new MediaTypeWithQualityHeaderValue("application/json"));
+
         request.Headers.UserAgent.ParseAdd("EnedisRetriever");
 
         using var response = await _httpClient.SendAsync(
             request,
             cancellationToken);
 
-        response.EnsureSuccessStatusCode();
-
         var content = await response.Content.ReadAsStringAsync(
             cancellationToken);
 
-        var jsonOptions = new JsonSerializerOptions
+        if (!response.IsSuccessStatusCode)
         {
-            PropertyNameCaseInsensitive = true,
-            PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
-        };
+            throw new ConsoApiException(response.StatusCode, content);
+        }
 
-        jsonOptions.Converters.Add(new ConsoApiDateTimeConverter());
+        return Deserialize(content);
+    }
 
-        return JsonSerializer.Deserialize<ConsumptionLoadCurve>(
-            content,
-            jsonOptions)
-            ?? throw new InvalidOperationException(
-                "Conso API returned an empty response.");
+    public static ConsumptionLoadCurve Deserialize(string content) =>
+        JsonSerializer.Deserialize<ConsumptionLoadCurve>(content, JsonOptions)
+        ?? throw new InvalidOperationException(
+            "Conso API returned an empty response.");
+
+    private static JsonSerializerOptions CreateJsonOptions()
+    {
+        var options = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+
+        options.Converters.Add(new ConsoApiDateTimeConverter());
+
+        return options;
     }
 }

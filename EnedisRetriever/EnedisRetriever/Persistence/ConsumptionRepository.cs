@@ -1,5 +1,7 @@
 ﻿using EnedisRetriever.Domain;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
+using NpgsqlTypes;
 
 namespace EnedisRetriever.Persistence;
 
@@ -21,44 +23,75 @@ public class ConsumptionRepository(AppDbContext dbContext)
             .ToListAsync(cancellationToken);
     }
 
+    /// <summary>
+    /// Counts cached points per consumption day. Timestamps mark the end of
+    /// each interval, so the interval start decides which day a point belongs to.
+    /// </summary>
+    public async Task<List<DayAvailability>> GetDailyAvailabilityAsync(
+        CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.Database
+            .SqlQuery<DayAvailability>($"""
+                SELECT ("Timestamp" - "IntervalDuration")::date AS "Date",
+                       count(*)::int AS "Points"
+                FROM "ConsumptionPoints"
+                GROUP BY 1
+                ORDER BY 1
+                """)
+            .ToListAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Inserts the points, or updates the ones whose timestamp is already cached.
+    /// Done in one atomic statement so that two requests loading the same days
+    /// at the same time cannot collide on the unique timestamp index.
+    /// </summary>
     public async Task UpsertAsync(
         IEnumerable<ConsumptionPoint> points,
         CancellationToken cancellationToken = default)
     {
-        var pointsList = points.ToList();
+        // ON CONFLICT cannot touch the same row twice in one statement:
+        // keep a single point per timestamp (the last one wins).
+        var pointsList = points
+            .GroupBy(point => point.Timestamp)
+            .Select(group => group.Last())
+            .ToList();
 
         if (pointsList.Count == 0)
         {
             return;
         }
 
-        var timestamps = pointsList
-            .Select(point => point.Timestamp)
-            .ToList();
-
-        var existingPoints = await _dbContext.ConsumptionPoints
-            .Where(point => timestamps.Contains(point.Timestamp))
-            .ToListAsync(cancellationToken);
-
-        var existingByTimestamp = existingPoints
-            .ToDictionary(point => point.Timestamp);
-
-        foreach (var point in pointsList)
+        var parameters = new NpgsqlParameter[]
         {
-            if (existingByTimestamp.TryGetValue(
-                point.Timestamp,
-                out var existing))
+            new NpgsqlParameter<DateTime[]>("timestamps", NpgsqlDbType.Array | NpgsqlDbType.Timestamp)
             {
-                existing.PowerWatts = point.PowerWatts;
-                existing.IntervalDuration = point.IntervalDuration;
-                existing.EnergyKwh = point.EnergyKwh;
-            }
-            else
+                TypedValue = pointsList.Select(point => point.Timestamp).ToArray()
+            },
+            new NpgsqlParameter<decimal[]>("powers", NpgsqlDbType.Array | NpgsqlDbType.Numeric)
             {
-                _dbContext.ConsumptionPoints.Add(point);
+                TypedValue = pointsList.Select(point => point.PowerWatts).ToArray()
+            },
+            new NpgsqlParameter<TimeSpan[]>("durations", NpgsqlDbType.Array | NpgsqlDbType.Interval)
+            {
+                TypedValue = pointsList.Select(point => point.IntervalDuration).ToArray()
+            },
+            new NpgsqlParameter<decimal[]>("energies", NpgsqlDbType.Array | NpgsqlDbType.Numeric)
+            {
+                TypedValue = pointsList.Select(point => point.EnergyKwh).ToArray()
             }
-        }
+        };
 
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        await _dbContext.Database.ExecuteSqlRawAsync(
+            """
+            INSERT INTO "ConsumptionPoints" ("Timestamp", "PowerWatts", "IntervalDuration", "EnergyKwh")
+            SELECT * FROM unnest(@timestamps, @powers, @durations, @energies)
+            ON CONFLICT ("Timestamp") DO UPDATE SET
+                "PowerWatts" = EXCLUDED."PowerWatts",
+                "IntervalDuration" = EXCLUDED."IntervalDuration",
+                "EnergyKwh" = EXCLUDED."EnergyKwh"
+            """,
+            parameters,
+            cancellationToken);
     }
 }

@@ -1,34 +1,10 @@
-@host = https://localhost:7290
-@start = 2026-10-30
-@end = 2026-09-03
+@host = http://localhost:5000
+@start = 2026-10-01
+@end = 2026-10-08
 
-### Get raw consumption points
+### Get raw half-hour consumption points ([start, end))
 GET {{host}}/api/consumption?start={{start}}&end={{end}}
 
 
-### Get consumption summary
-GET {{host}}/api/consumption/summary?start={{start}}&end={{end}}
-
-
-### Aggregate - 30 minutes
-GET {{host}}/api/consumption/aggregate?start={{start}}&end={{end}}&granularity=HalfHour
-
-
-### Aggregate - Hour
-GET {{host}}/api/consumption/aggregate?start={{start}}&end={{end}}&granularity=Hour
-
-
-### Aggregate - Day
-GET {{host}}/api/consumption/aggregate?start={{start}}&end={{end}}&granularity=Day
-
-
-### Aggregate - Week
-GET {{host}}/api/consumption/aggregate?start={{start}}&end={{end}}&granularity=Week
-
-
-### Aggregate - Month
-GET {{host}}/api/consumption/aggregate?start={{start}}&end={{end}}&granularity=Month
-
-
-### Aggregate - Year
-GET {{host}}/api/consumption/aggregate?start={{start}}&end={{end}}&granularity=Year
+### Cached data overview (per-day point counts, no consoAPI call)
+GET {{host}}/api/consumption/availability

@@ -1,36 +1,61 @@
-import type {
-  ConsumptionAggregate,
-  ConsumptionGranularity
-} from '../types/consumption';
+import type { Availability, ConsumptionPoint } from '../types/consumption';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+// In dev, Vite proxies /api to the local backend (see vite.config.ts);
+// in production Nginx does the same, so the default works everywhere.
+const API_BASE_URL: string = import.meta.env.VITE_API_BASE_URL ?? '/api';
 
-export type ConsumptionAggregateParams = {
-  start: string;
-  end: string;
-  granularity: ConsumptionGranularity;
-};
+export class ApiError extends Error {
+  readonly status: number;
 
-export async function getConsumptionAggregate(
-  params: ConsumptionAggregateParams,
-  signal?: AbortSignal
-): Promise<ConsumptionAggregate> {
-  // params.end is already the exclusive end date, converted from the UI's inclusive date
-  const searchParams = new URLSearchParams({
-    start: params.start,
-    end: params.end,
-  });
+  constructor(status: number, message: string) {
+    super(message);
+    this.status = status;
+  }
+}
 
-  const response = await fetch(
-    `${API_BASE_URL}/consumption?${searchParams}`,
-    { signal }
-  );
+function describeFailure(status: number): string {
+  switch (status) {
+    case 400:
+      return 'La période demandée est invalide.';
+    case 502:
+      return 'Enedis (consoAPI) n’a pas répondu correctement. Réessayez dans quelques minutes.';
+    default:
+      return `Le serveur a répondu avec une erreur (${status}).`;
+  }
+}
 
-  if (!response.ok) {
-    throw new Error(
-      `Failed to fetch consumption data: ${response.status}`
-    );
+async function getJson<T>(path: string, signal?: AbortSignal): Promise<T> {
+  let response: Response;
+
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, { signal });
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw error;
+    }
+
+    throw new ApiError(0, 'Impossible de joindre le serveur.');
   }
 
-  return response.json();
+  if (!response.ok) {
+    throw new ApiError(response.status, describeFailure(response.status));
+  }
+
+  return response.json() as Promise<T>;
+}
+
+/** Raw half-hour points for the days in [start, endExclusive), as YYYY-MM-DD. */
+export function getConsumption(
+  start: string,
+  endExclusive: string,
+  signal?: AbortSignal
+): Promise<ConsumptionPoint[]> {
+  const params = new URLSearchParams({ start, end: endExclusive });
+
+  return getJson(`/consumption?${params}`, signal);
+}
+
+/** What the backend already has in cache; never triggers an Enedis call. */
+export function getAvailability(signal?: AbortSignal): Promise<Availability> {
+  return getJson('/consumption/availability', signal);
 }

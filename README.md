@@ -76,6 +76,16 @@ The date range follows the `[start, end)` convention.
 
 The returned timestamps represent the **end of each consumption interval**.
 
+A period cannot exceed 366 days. When consoAPI fails, the endpoint answers `502` with the original status code in the problem details.
+
+A second endpoint describes what is already cached, without calling consoAPI:
+
+```text
+GET /api/consumption/availability
+```
+
+It returns the first and last cached days, the total number of points, and the number of points per day (48 for a complete day). A point is counted in the day its interval starts in.
+
 The backend only exposes raw consumption data. It does not perform frontend-specific aggregation or pricing calculations.
 
 ### Frontend
@@ -89,11 +99,17 @@ The frontend is built with:
 
 The frontend is responsible for:
 
-* Fetching raw consumption data.
+* Fetching raw consumption data for the selected days. Days are chosen either as a period (presets or custom dates) or in a month-by-month calendar where days can be added or removed by dragging; the two views are swipeable cards. The whole span between the first and last selected day is fetched, and unselected days are filtered out client-side.
 * Aggregating data according to the selected granularity.
 * Calculating peak/off-peak consumption.
 * Calculating electricity costs.
-* Displaying charts and statistics.
+* Displaying key figures, the consumption or cost chart, the average day profile, and a simulated invoice (whole kWh, lines rounded like a supplier does) for periods of 28 days or more.
+
+Each point is placed on the clock by the **start** of its interval (timestamp minus interval duration): the point stamped 07:00 covers 06:30 to 07:00 and is counted as such for off-peak hours and daily totals.
+
+The contract (tariff option, prices, subscription, subscribed power, off-peak ranges) is edited in the "Contrat" panel and saved in the browser's `localStorage`. It never leaves the device.
+
+The interface is in French and works on mobile.
 
 ### Database
 
@@ -213,7 +229,7 @@ The frontend API URL is configured through:
 VITE_API_BASE_URL
 ```
 
-For local development, it can point directly to the local backend, for example:
+It defaults to `/api`. In development, the Vite dev server proxies `/api` to the local backend on `http://localhost:5000` (see `vite.config.ts`), so no environment file is needed. To target another backend, set for example:
 
 ```env
 VITE_API_BASE_URL=http://localhost:5100/api
